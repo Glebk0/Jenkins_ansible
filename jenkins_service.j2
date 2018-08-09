@@ -1,0 +1,10 @@
+[Unit]
+Description=Jenkins Daemon
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/java -Djava.awt.headless=true -DJENKINS_HOME={{ jenkins_home }} -jar {{ jenkins_location }} --daemon
+User=devops
+
+[Install]
+WantedBy=multi-user.target

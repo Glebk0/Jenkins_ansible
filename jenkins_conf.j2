@@ -1,0 +1,8 @@
+ProxyPass         /  {{ jenkins_host }} nocanon
+ProxyPassReverse  /  {{ jenkins_host }}
+ProxyRequests     Off
+AllowEncodedSlashes NoDecode
+<Proxy {{ jenkins_host }}*>
+  Order deny,allow
+  Allow from all
+</Proxy>

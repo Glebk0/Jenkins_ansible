@@ -1,0 +1,68 @@
+- hosts: all
+  become: yes
+  tasks:
+   - name: configuring hosts files
+     blockinfile:
+      path: /etc/hosts
+      block: |
+        {{ item.ip }} {{ item.name }}
+      marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+     with_items:
+      - { name: jenkins, ip: 192.168.1.70 }
+
+- hosts: webserver
+  become: yes
+  tasks:
+   - name: ensuring httpd exists and latest version
+     remote_user: devops
+     yum:
+      name: httpd
+      state: latest
+   - name: configuring httpd
+     vars:
+      jenkins_host: http://192.168.1.71:8080/
+     template:
+      src: jenkins_conf.j2
+      dest: /etc/httpd/conf.d/jenkins.conf
+
+   - name: enabling httpd service
+     systemd:
+      name: httpd
+      state: started
+      enabled: yes
+
+- hosts: appservers
+  become: yes
+  vars:
+    jenkins_location: /opt/jenkins_home/jenkins.war
+    jenkins_url: http://mirrors.jenkins.io/war/latest/jenkins.war
+    jenkins_home: /opt/jenkins_home/
+  tasks:
+    - name: creating directory for jenkins
+      file:
+        path: /opt/jenkins_home/
+        state: directory
+        owner: devops
+        group: devops
+        recurse: yes
+    - name: installing open-jdk-8
+      yum:
+        name: java-1.8.0-openjdk
+        state: installed
+    - name: downloading latest jenkins
+      get_url:
+        url: "{{ jenkins_url }}"
+        dest: "{{ jenkins_location }}"
+    - name: adding jenkins service
+      template:
+        src: jenkins_service.j2
+        dest: /etc/systemd/system/jenkins.service
+    - name: reloading jenkins service
+      systemd:
+        name: jenkins
+        daemon_reload: yes
+        enabled: yes
+    - name: enabling and starting jenkins service
+      systemd:
+        name: jenkins
+        state: started
