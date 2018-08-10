@@ -9,6 +9,7 @@
       marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
      with_items:
       - { name: jenkins, ip: 192.168.1.70 }
+      - { name: app_server, ip: 192.168.1.71 }
 
 - hosts: webserver
   become: yes
@@ -20,9 +21,9 @@
       state: latest
    - name: configuring httpd
      vars:
-      jenkins_host: http://192.168.1.71:8080/
+      jenkins_host: http://app_server:8080/
      template:
-      src: jenkins_conf.j2
+      src: templates/jenkins_conf.j2
       dest: /etc/httpd/conf.d/jenkins.conf
 
    - name: enabling httpd service
@@ -55,7 +56,7 @@
         dest: "{{ jenkins_location }}"
     - name: adding jenkins service
       template:
-        src: jenkins_service.j2
+        src: templates/jenkins_service.j2
         dest: /etc/systemd/system/jenkins.service
     - name: reloading jenkins service
       systemd:
