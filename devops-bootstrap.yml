@@ -1,9 +1,9 @@
 - hosts: localhost
   tasks:
   - name: Generating ssh key
-    shell: ssh-keygen -b 2048 -t rsa -f ~/ansible/day1/devops -q -N ""
+    shell: ssh-keygen -b 2048 -t rsa -f devops -q -N ""
     args:
-      creates: ~/ansible/day1/devops
+      creates: devops
   - name: Converting rsa ssh key to pem ssh key
     shell: |
           openssl rsa -in devops -outform pem > devops.pem
@@ -12,28 +12,29 @@
 - hosts: all
   vars:
     user: devops
+    group: devops
   become: yes
   tasks:
   - name: Create group
     group:
-      name: "{{ user }}"
+      name: "{{ group }}"
       state: present
   - name: Create user
     user:
       name: "{{ user }}"
-      group: "{{ user }}"
+      group: "{{ group }}"
       state: present
 
 
   - name: Add user to sudoers
-    lineinfile:
-      path: /etc/sudoers
-      state: present
-      regexp: ^{{ user }}\s
-      line: '{{ user }} ALL=(ALL) NOPASSWD: ALL'
+    template:
+      src: templates/sudoers.j2
+      dest: /etc/sudoers.d/{{ user }}
+      validate: 'visudo -cf %s'
+      mode: 0440
 
   - name: Set authorized key took from file
     authorized_key:
       user: "{{ user }}"
       state: present
-      key: "{{ lookup('file', '/home/student/ansible/day1/devops.pub') }}"
+      key: "{{ lookup('file', 'devops.pub') }}"
